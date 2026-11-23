@@ -1,11 +1,27 @@
-// A working news-image-daily entry (Node 22, standard library only): its image is the entry.png beside this file, and
-// the program copies it to /output/entry.png. A starting point, not a winner: replace the image. The gate takes a
-// whole PNG or JPEG of at most 1 MiB and 1024 by 1024 pixels, and the judge sees exactly the bytes copied.
+// "The World Today — 23 November 2026" (make.fun news-image-20261123).
+// A finished front page, drawn for this day and shipped beside this file:
+// the program writes it to the grader's output directory as entry.png.
+// No network is used at grade time; the image bytes are exactly the ones
+// in this repository, so every run produces the same file.
 //
-// Outside the grader's container, MAKEFUN_OUTPUT_DIR stands in for /output:
+// Run it outside the grader with MAKEFUN_OUTPUT_DIR standing in for /output:
 //   mkdir -p out && MAKEFUN_OUTPUT_DIR=out node main.ts
 
-import { copyFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-copyFileSync(new URL('./entry.png', import.meta.url), join(process.env.MAKEFUN_OUTPUT_DIR ?? '/output', 'entry.png'));
+const outDir = process.env.MAKEFUN_OUTPUT_DIR ?? '/output';
+const here = dirname(fileURLToPath(import.meta.url));
+const image = readFileSync(join(here, 'entry.png'));
+
+mkdirSync(outDir, { recursive: true });
+const target = join(outDir, 'entry.png');
+writeFileSync(target, image);
+
+// Fail loudly instead of silently shipping a short file: the gate reads
+// exactly these bytes, so confirm the copy landed whole before exiting.
+const written = readFileSync(target);
+if (written.length !== image.length || !written.equals(image)) {
+  throw new Error(`entry.png copy mismatch: wrote ${written.length} of ${image.length} bytes`);
+}
